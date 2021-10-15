@@ -68,6 +68,27 @@ class WP_Gallery_To_Photonic {
 			}, $position );
 		}, 11 );
 
+		// submenu page style
+
+		add_action( 'admin_enqueue_scripts', function( string $hook ): void {
+			if ( $hook !== 'photonic_page_g2phot' )
+				return;
+?>
+<style>
+@media screen and (min-width: 783px) {
+	body.photonic_page_g2phot .fixed .column-author,
+	body.photonic_page_g2phot .fixed .column-date {
+		width: 120px;
+	}
+	body.photonic_page_g2phot .fixed .column-shortcode {
+		width: 90px;
+		text-align: right;
+	}
+}
+</style>
+<?php
+		} );
+
 		// main tab
 
 		add_filter( 'g2phot_tab_list', function( array $tab_list ): array {

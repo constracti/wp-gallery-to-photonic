@@ -15,6 +15,7 @@ class WP_Gallery_To_Photonic_Main_List_Table extends WP_List_Table {
 			'title' => 'Title',
 			'author' => 'Author',
 			'date' => 'Date',
+			'shortcode' => 'Shortcode',
 		];
 	}
 
@@ -67,7 +68,20 @@ class WP_Gallery_To_Photonic_Main_List_Table extends WP_List_Table {
 	}
 
 	function column_author( WP_Post $post ): string {
-		$author = get_user_by( 'ID', $post->post_author );
-		return esc_html( $author->data->user_login );
+		return esc_html( get_the_author_meta( 'display_name', $post->post_author ) );
+	}
+
+	function column_shortcode( WP_Post $post ): string {
+		$regex = get_shortcode_regex( [ 'gallery', ] );
+		$m = NULL;
+		if ( !has_shortcode( $post->post_content, 'gallery' ) )
+			return '-';
+		preg_match( '/' . $regex . '/s', $post->post_content, $m );
+		if ( is_null( $m ) || empty( $m ) )
+			return '-';
+		$atts = shortcode_parse_atts( $m[3] );
+		if ( !array_key_exists( 'ids', $atts ) )
+			return '-';
+		return count( explode( ',', $atts['ids'] ) );
 	}
 }
