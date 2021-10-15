@@ -153,8 +153,8 @@ class WP_Gallery_To_Photonic {
 				'posts_per_page' => -1,
 				'post__in' => $ignored,
 			] ) : [];
-			require_once( self::$DIR . 'ignored-table.php' );
-			$table = new WP_Gallery_To_Photonic_Ignored_List_Table();
+			require_once( self::$DIR . 'main-table.php' );
+			$table = new WP_Gallery_To_Photonic_Main_List_Table();
 			$table->prepare_items( $posts );
 			$table->display();
 		} );
