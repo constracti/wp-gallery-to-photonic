@@ -325,6 +325,7 @@ class WP_Gallery_To_Photonic {
 					wp_die( 'nonce' );
 				$authentication_url = $oauth2->buildFullAuthorizationUri( [
 					'access_type' => 'offline',
+					'prompt'      => 'consent',
 				] );
 				header( 'Location: ' . $authentication_url );
 				exit;
@@ -332,9 +333,9 @@ class WP_Gallery_To_Photonic {
 				// With the code returned by the OAuth flow, we can retrieve the refresh token.
 				$oauth2->setCode( $_GET['code'] );
 				$auth_token = $oauth2->fetchAuthToken();
-				$refresh_token = $auth_token['access_token'];
+				$refresh_token = $auth_token['refresh_token'];
 				update_option( 'g2phot_refresh', $refresh_token );
-				header( 'Location: ' . admin_url( 'admin.php?page=g2phot' ) );
+				header( 'Location: ' . admin_url( 'admin.php?page=g2phot&tab=settings' ) );
 				exit;
 			}
 		} );
@@ -347,7 +348,7 @@ class WP_Gallery_To_Photonic {
 			if ( !self::verify_nonce( 'g2phot_clear' ) )
 				wp_die( 'nonce' );
 			delete_option( 'g2phot_refresh' );
-			header( 'Location: ' . admin_url( 'admin.php?page=g2phot' ) );
+			header( 'Location: ' . admin_url( 'admin.php?page=g2phot&tab=settings' ) );
 			exit;
 		} );
 
