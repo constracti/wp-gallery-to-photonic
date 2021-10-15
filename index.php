@@ -10,8 +10,10 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  */
 
+
 if ( !defined( 'ABSPATH' ) )
 	exit;
+
 
 class WP_Gallery_To_Photonic {
 
@@ -25,6 +27,8 @@ class WP_Gallery_To_Photonic {
 	public function init(): void {
 		self::$DIR = plugin_dir_path( __FILE__ );
 		self::$URL = plugin_dir_url( __FILE__ );
+
+		// submenu page
 
 		add_action( 'admin_menu', function(): void {
 			$parent_slug = 'photonic-options-manager';
@@ -64,8 +68,10 @@ class WP_Gallery_To_Photonic {
 			}, $position );
 		}, 11 );
 
+		// main tab
+
 		add_filter( 'g2phot_tab_list', function( array $tab_list ): array {
-			$tab_list[''] = 'Table';
+			$tab_list[''] = 'Main';
 			return $tab_list;
 		} );
 
@@ -76,7 +82,6 @@ class WP_Gallery_To_Photonic {
 				echo sprintf( '<p><a href="%s" class="button button-primary">Settings</a></p>', $url );
 				return;
 			}
-
 			$posts = get_posts( [
 				's' => '[gallery ',
 				'post_type' => 'post',
@@ -84,68 +89,13 @@ class WP_Gallery_To_Photonic {
 				'order' => 'ASC',
 				'post__not_in' => get_option( 'g2phot_ignored', [] ),
 			] );
-
-			if ( !class_exists( 'WP_List_Table' ) )
-				require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
-
-			$c = new class extends WP_List_Table {
-
-				function get_columns(): array {
-					return [
-						'title' => 'Title',
-						'author' => 'Author',
-						'date' => 'Date',
-					];
-				}
-
-				function prepare_items( array $items = [] ): void {
-					$columns = $this->get_columns();
-					$hidden = [];
-					$sortable = [];
-					$this->_column_headers = [ $columns, $hidden, $sortable, ];
-					$this->items = $items;
-				}
-
-				function column_title( WP_Post $post ): string {
-					$exclude_url = admin_url( 'admin.php?action=g2phot_exclude&id=' . $post->ID );
-					$exclude_url = WP_Gallery_To_Photonic::append_nonce( $exclude_url, 'g2phot_exclude_' . $post->ID );
-					$actions = [
-						'view' => sprintf( '<a href="%s">View</a>', get_the_permalink( $post ) ),
-						'upload' => sprintf( '<a href="%s">Upload</a>', admin_url( 'admin.php?page=g2phot&tab=upload&id=' . $post->ID ) ),
-						'exclude' => sprintf( '<a href="%s">Exclude</a>', $exclude_url ),
-					];
-					ob_start();
-?>
-<div style="display: flex;">
-	<div style="flex-shrink: 0; height: 40px; width: 40px; margin-right: 8px;">
-<?php
-					echo get_the_post_thumbnail( $post, 'thumbnail', [
-						'style' => 'max-height: 100%; height: auto; max-width: 100%; width: auto;',
-					] );
-?>
-	</div>
-	<div style="flex-grow: 1;">
-		<div><strong><a href="<?= admin_url( sprintf( 'post.php?post=%d&action=edit', $post->ID ) ) ?>"><?= esc_html( $post->post_title ) ?></a></strong></div>
-		<div><?= $this->row_actions( $actions ) ?></div>
-	</div>
-</div>
-<?php
-					return ob_get_clean();
-				}
-
-				function column_date( WP_Post $post ): string {
-					return esc_html( $post->post_date );
-				}
-
-				function column_author( WP_Post $post ): string {
-					$author = get_user_by( 'ID', $post->post_author );
-					return esc_html( $author->data->user_login );
-				}
-			};
-			$table = new $c();
+			require_once( self::$DIR . 'main-table.php' );
+			$table = new WP_Gallery_To_Photonic_Main_List_Table();
 			$table->prepare_items( $posts );
 			$table->display();
 		} );
+
+		// upload hidden tab
 
 		add_action( 'g2phot_tab_html_upload', function(): void {
 			if ( !array_key_exists( 'id', $_GET ) || !is_string( $_GET['id'] ) )
@@ -175,7 +125,7 @@ class WP_Gallery_To_Photonic {
 				$keys = array_keys( $atts );
 				if ( count( $keys ) === 1 && $keys[0] === 'ids' ) {
 					$url = admin_url( sprintf( 'admin.php?action=g2phot_upload&id=%d&md5=%s', $post->ID, md5( $m[0] ) ) );
-					$url = self::append_nonce( $url, 'g2phot_upload_' . $post->ID );
+					$url = wp_nonce_url( $url, 'g2phot_upload_' . $post->ID, 'nonce' );
 					$url1 = $url . '&field=title';
 					$url2 = $url . '&field=caption';
 ?>
@@ -186,54 +136,15 @@ class WP_Gallery_To_Photonic {
 </p>
 <?php
 					$ids = array_map( 'intval', explode( ',', $atts['ids'] ) );
-
-					if ( !class_exists( 'WP_List_Table' ) )
-						require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
-
-					$c = new class extends WP_List_Table {
-
-						function get_columns(): array {
-							return [
-								'thumbnail' => 'Thumbnail',
-								'title' => 'Title',
-								'caption' => 'Caption',
-							];
-						}
-
-						function prepare_items( array $items = [] ): void {
-							$columns = $this->get_columns();
-							$hidden = [];
-							$sortable = [];
-							$this->_column_headers = [ $columns, $hidden, $sortable, ];
-							$this->items = $items;
-						}
-
-						function column_thumbnail( int $id ): string {
-							ob_start();
-							echo '<div style="height: 40px; width: 40px;">';
-							echo wp_get_attachment_image( $id, 'thumbnail', FALSE, [
-								'style' => 'max-height: 100%; height: auto; max-width: 100%; width: auto;',
-							] );
-							echo '</div>';
-							return ob_get_clean();
-						}
-
-						function column_title( int $id ): string {
-							return esc_html( get_the_title( $id ) );
-						}
-
-						function column_caption( int $id ): string {
-							return esc_html( wp_get_attachment_caption( $id ) );
-						}
-
-						function display_tablenav( $which ): void {}
-					};
-					$table = new $c();
+					require_once( self::$DIR . 'upload-table.php' );
+					$table = new WP_Gallery_To_Photonic_Upload_List_Table();
 					$table->prepare_items( $ids );
 					$table->display();
 				}
 			}
 		} );
+
+		// ignored tab
 
 		add_filter( 'g2phot_tab_list', function( array $tab_list ): array {
 			$tab_list['ignored'] = 'Ignored';
@@ -247,58 +158,13 @@ class WP_Gallery_To_Photonic {
 				'posts_per_page' => -1,
 				'post__in' => $ignored,
 			] ) : [];
-
-			if ( !class_exists( 'WP_List_Table' ) )
-				require_once( ABSPATH . 'wp-admin/includes/class-wp-list-table.php' );
-
-			$c = new class extends WP_List_Table {
-
-				function get_columns(): array {
-					return [
-						'title' => 'Title',
-						'author' => 'Author',
-						'date' => 'Date',
-					];
-				}
-
-				function prepare_items( array $items = [] ): void {
-					$columns = $this->get_columns();
-					$hidden = [];
-					$sortable = [];
-					$this->_column_headers = [ $columns, $hidden, $sortable, ];
-					$this->items = $items;
-				}
-
-				function column_title( WP_Post $post ): string {
-					$include_url = admin_url( 'admin.php?action=g2phot_include&id=' . $post->ID );
-					$include_url = WP_Gallery_To_Photonic::append_nonce( $include_url, 'g2phot_include_' . $post->ID );
-					$view_url = get_the_permalink( $post );
-					$edit_url = admin_url( sprintf( 'post.php?post=%d&action=edit', $post->ID ) );
-					$actions = [
-						'view' => sprintf( '<a href="%s">View</a>', $view_url ),
-						'include' => sprintf( '<a href="%s">Include</a>', $include_url ),
-					];
-					ob_start();
-?>
-<div><strong><a href="<?= $edit_url ?>"><?= esc_html( $post->post_title ) ?></a></strong></div>
-<div><?= $this->row_actions( $actions ) ?></div>
-<?php
-					return ob_get_clean();
-				}
-
-				function column_date( WP_Post $post ): string {
-					return esc_html( $post->post_date );
-				}
-
-				function column_author( WP_Post $post ): string {
-					$author = get_user_by( 'ID', $post->post_author );
-					return esc_html( $author->data->user_login );
-				}
-			};
-			$table = new $c();
+			require_once( self::$DIR . 'ignored-table.php' );
+			$table = new WP_Gallery_To_Photonic_Ignored_List_Table();
 			$table->prepare_items( $posts );
 			$table->display();
 		} );
+
+		// settings tab
 
 		add_filter( 'g2phot_tab_list', function( array $tab_list ): array {
 			$tab_list['settings'] = 'Settings';
@@ -309,7 +175,7 @@ class WP_Gallery_To_Photonic {
 			$client_id = get_option( 'g2phot_client_id' );
 			$client_secret = get_option( 'g2phot_client_secret' );
 			$url = admin_url( 'admin.php?action=g2phot_client' );
-			$url = self::append_nonce( $url, 'g2phot_client' );
+			$url = wp_nonce_url( $url, 'g2phot_client', 'nonce' );
 ?>
 <h2 class="title">Client Details</h2>
 <form method="post" action="<?= $url ?>">
@@ -351,28 +217,24 @@ class WP_Gallery_To_Photonic {
 <?php
 			if ( !empty( $refresh_token ) ) {
 ?>
-<table class="form-table" role="presentation">
-	<tbody>
-		<tr>
-			<th scope="row">Refresh Token<th>
-			<td><code><?= esc_html( $refresh_token ) ?></code></td>
-		</tr>
-	</tbody>
-</table>
+<p><strong>Refresh Token</strong></p>
+<p><code><?= esc_html( $refresh_token ) ?></code></p>
 <?php
 				$url = admin_url( 'admin.php?action=g2phot_clear' );
-				$url = self::append_nonce( $url, 'g2phot_clear' );
+				$url = wp_nonce_url( $url, 'g2phot_clear', 'nonce' );
 ?>
 <p><a href="<?= $url ?>" class="button">Delete Token</a></p>
 <?php
 			} else {
 				$url = admin_url( 'admin.php?action=g2phot_auth' );
-				$url = self::append_nonce( $url, 'g2phot_auth' );
+				$url = wp_nonce_url($url, 'g2phot_auth', 'nonce' );
 ?>
 <p><a href="<?= $url ?>" class="button button-primary">Authenticate</a></p>
 <?php
 			}
 		} );
+
+		// exclude action
 
 		add_action( 'admin_action_g2phot_exclude', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
@@ -390,6 +252,8 @@ class WP_Gallery_To_Photonic {
 			header( 'Location: ' . admin_url( 'admin.php?page=g2phot' ) );
 			exit;
 		} );
+
+		// include action
 
 		add_action( 'admin_action_g2phot_include', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
@@ -412,6 +276,8 @@ class WP_Gallery_To_Photonic {
 			header( 'Location: ' . admin_url( 'admin.php?page=g2phot&tab=ignored' ) );
 			exit;
 		} );
+
+		// client action
 
 		add_action( 'admin_action_g2phot_client', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
@@ -436,6 +302,8 @@ class WP_Gallery_To_Photonic {
 			header( 'Location: ' . admin_url( 'admin.php?page=g2phot&tab=settings' ) );
 			exit;
 		} );
+
+		// auth action
 
 		add_action( 'admin_action_g2phot_auth', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
@@ -471,6 +339,8 @@ class WP_Gallery_To_Photonic {
 			}
 		} );
 
+		// clear action
+
 		add_action( 'admin_action_g2phot_clear', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
 				wp_die( 'role' );
@@ -480,6 +350,8 @@ class WP_Gallery_To_Photonic {
 			header( 'Location: ' . admin_url( 'admin.php?page=g2phot' ) );
 			exit;
 		} );
+
+		// upload action
 
 		add_action( 'admin_action_g2phot_upload', function(): void {
 			if ( !current_user_can( 'manage_options' ) )
@@ -599,7 +471,7 @@ class WP_Gallery_To_Photonic {
 		} );
 	}
 
-	public function verify_nonce( string $action ): bool {
+	private function verify_nonce( string $action ): bool {
 		if ( !array_key_exists( 'nonce', $_GET ) )
 			return FALSE;
 		if ( !is_string( $_GET['nonce'] ) )
@@ -608,10 +480,7 @@ class WP_Gallery_To_Photonic {
 			return FALSE;
 		return TRUE;
 	}
-
-	public function append_nonce( string $url, string $action ): string {
-		return wp_nonce_url( $url, $action, 'nonce' );
-	}
 }
+
 
 WP_Gallery_To_Photonic::init();
