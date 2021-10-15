@@ -101,17 +101,12 @@ class WP_Gallery_To_Photonic {
 			if ( !array_key_exists( 'id', $_GET ) || !is_string( $_GET['id'] ) )
 				return;
 			$post = get_post( intval( $_GET['id'] ) );
+			require_once( self::$DIR . 'main-table.php' );
+			$table = new WP_Gallery_To_Photonic_Main_List_Table();
+			$table->prepare_items( [ $post, ] );
+			$table->display();
 			$thumb = get_post_thumbnail_id( $post );
 			$regex = get_shortcode_regex( [ 'gallery', ] );
-?>
-<h2>ID</h2>
-<p><?= esc_html( $post->ID ) ?></p>
-<h2>title</h2>
-<p><a href="<?= get_the_permalink( $post ) ?>" target="_blank"><?= esc_html( $post->post_title ) ?></a></p>
-<h2>thumbnail</h2>
-<p><?= $thumb ?></p>
-<p><a href="<?= admin_url( sprintf( 'post.php?post=%d&action=edit', $post->ID ) ) ?>" class="button">edit</a></p>
-<?php
 			$m = NULL;
 			if ( has_shortcode( $post->post_content, 'gallery' ) )
 				preg_match( '/' . $regex . '/s', $post->post_content, $m );
