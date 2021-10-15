@@ -29,16 +29,16 @@ class WP_Gallery_To_Photonic_Main_List_Table extends WP_List_Table {
 	function column_title( WP_Post $post ): string {
 		$edit_url = admin_url( 'post.php?post=' . $post->ID . '&action=edit' );
 		$view_url = get_the_permalink( $post );
-		$upload_url = admin_url( 'admin.php?page=g2phot&tab=upload&id=' . $post->ID );
 		$actions = [
 			'view' => sprintf( '<a href="%s">View</a>', $view_url ),
-			'upload' => sprintf( '<a href="%s">Upload</a>', $upload_url ),
 		];
 		if ( array_key_exists( 'tab', $_GET ) && $_GET['tab'] === 'ignored' ) {
 			$include_url = admin_url( 'admin.php?action=g2phot_include&id=' . $post->ID );
 			$include_url = wp_nonce_url( $include_url, 'g2phot_include_' . $post->ID, 'nonce' );
 			$actions['include'] = sprintf( '<a href="%s">Include</a>', $include_url );
 		} else {
+			$upload_url = admin_url( 'admin.php?page=g2phot&tab=upload&id=' . $post->ID );
+			$actions['upload'] = sprintf( '<a href="%s">Upload</a>', $upload_url );
 			$exclude_url = admin_url( 'admin.php?action=g2phot_exclude&id=' . $post->ID );
 			$exclude_url = wp_nonce_url( $exclude_url, 'g2phot_exclude_' . $post->ID, 'nonce' );
 			$actions['exclude'] = sprintf( '<a href="%s">Exclude</a>', $exclude_url );
