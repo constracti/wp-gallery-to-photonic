@@ -13,6 +13,7 @@ class WP_Gallery_To_Photonic_Upload_List_Table extends WP_List_Table {
 	function get_columns(): array {
 		return [
 			'thumbnail' => 'Thumbnail',
+			'id' => 'ID',
 			'title' => 'Title',
 			'caption' => 'Caption',
 		];
@@ -34,6 +35,10 @@ class WP_Gallery_To_Photonic_Upload_List_Table extends WP_List_Table {
 		] ) . "\n";
 		$return .= '</div>' . "\n";
 		return $return;
+	}
+
+	function column_id( int $id ): string {
+		return esc_html( $id );
 	}
 
 	function column_title( int $id ): string {

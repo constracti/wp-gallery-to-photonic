@@ -135,7 +135,7 @@ class WP_Gallery_To_Photonic {
 				$text = $m[0];
 ?>
 <h2>shortcode</h2>
-<p><code><?= esc_html( $text ) ?></code></p>
+<p style="overflow-x: auto;"><code><?= esc_html( $text ) ?></code></p>
 <?php
 				$atts = shortcode_parse_atts( $m[3] );
 				$keys = array_keys( $atts );
