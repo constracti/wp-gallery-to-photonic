@@ -488,7 +488,7 @@ class WP_Gallery_To_Photonic {
 		} );
 	}
 
-	private function verify_nonce( string $action ): bool {
+	private static function verify_nonce( string $action ): bool {
 		if ( !array_key_exists( 'nonce', $_GET ) )
 			return FALSE;
 		if ( !is_string( $_GET['nonce'] ) )
