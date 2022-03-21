@@ -24,7 +24,7 @@ class WP_Gallery_To_Photonic {
 		'https://www.googleapis.com/auth/photoslibrary.appendonly',
 	];
 
-	public function init(): void {
+	public static function init(): void {
 		self::$DIR = plugin_dir_path( __FILE__ );
 		self::$URL = plugin_dir_url( __FILE__ );
 
