@@ -138,6 +138,8 @@ class WP_Gallery_To_Photonic {
 <p style="overflow-x: auto;"><code><?= esc_html( $text ) ?></code></p>
 <?php
 				$atts = shortcode_parse_atts( $m[3] );
+				if ( array_key_exists( 'columns', $atts ) )
+					unset( $atts['columns'] );
 				$keys = array_keys( $atts );
 				if ( count( $keys ) === 1 && $keys[0] === 'ids' ) {
 					$url = admin_url( sprintf( 'admin.php?action=g2phot_upload&id=%d&md5=%s', $post->ID, md5( $m[0] ) ) );
