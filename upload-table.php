@@ -38,7 +38,11 @@ class WP_Gallery_To_Photonic_Upload_List_Table extends WP_List_Table {
 	}
 
 	function column_id( int $id ): string {
-		return esc_html( $id );
+		$href = add_query_arg( [
+			'post' => $id,
+			'action' => 'edit',
+		], admin_url( 'post.php' ) );
+		return sprintf( '<a href="%s" target="_blank">%s</a>', esc_url_raw( $href ), esc_html( $id ) );
 	}
 
 	function column_title( int $id ): string {
