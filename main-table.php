@@ -76,12 +76,22 @@ class WP_Gallery_To_Photonic_Main_List_Table extends WP_List_Table {
 		$m = NULL;
 		if ( !has_shortcode( $post->post_content, 'gallery' ) )
 			return '-';
-		preg_match( '/' . $regex . '/s', $post->post_content, $m );
-		if ( is_null( $m ) || empty( $m ) )
+		preg_match_all( '/' . $regex . '/s', $post->post_content, $m, PREG_SET_ORDER );
+		$ids = [];
+		if ( !is_null( $m ) ) {
+			foreach ( $m as $mm ) {
+				$atts = shortcode_parse_atts( $mm[3] );
+				if ( !array_key_exists( 'ids', $atts ) )
+					continue;
+				$ids[] = count( explode( ',', $atts['ids'] ) );
+			}
+		}
+		if ( empty( $ids ) )
 			return '-';
-		$atts = shortcode_parse_atts( $m[3] );
-		if ( !array_key_exists( 'ids', $atts ) )
-			return '-';
-		return count( explode( ',', $atts['ids'] ) );
+		$html = '';
+		if ( count( $ids ) > 1 )
+			$html .= '<div>' . implode( ' + ', $ids ) . ' =</div>';
+		$html .= '<div><strong>' . array_sum( $ids ) . '</strong></div>';
+		return $html;
 	}
 }
